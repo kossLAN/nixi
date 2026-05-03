@@ -33,6 +33,27 @@ SettingsBacker {
             return null;
         }
 
+        property var wiredDevice: {
+            if (!Networking.devices)
+                return null;
+
+            for (let i = 0; i < Networking.devices.values.length; i++) {
+                const dev = Networking.devices.values[i];
+
+                if (dev.type !== DeviceType.Wifi)
+                    return dev;
+            }
+
+            return null;
+        }
+
+        function isSecured(network: WifiNetwork): bool {
+            if (!network)
+                return false;
+
+            return network.security !== WifiSecurityType.Open && network.security !== WifiSecurityType.Owe;
+        }
+
         Component.onCompleted: {
             if (wifiDevice && Networking.wifiEnabled) {
                 wifiDevice.scannerEnabled = true;
@@ -88,6 +109,10 @@ SettingsBacker {
 
                         IconImage {
                             source: {
+                                if (container.wiredDevice) {
+                                    return Quickshell.iconPath("nm-device-wired");
+                                }
+
                                 if (Networking.wifiEnabled && container.wifiDevice) {
                                     return Quickshell.iconPath("network-wireless-100");
                                 } else {
@@ -104,12 +129,18 @@ SettingsBacker {
                             Layout.fillWidth: true
 
                             StyledText {
-                                text: container.wifiDevice ? `WiFi (${container.wifiDevice.name})` : "No WiFi Device"
+                                text: {
+                                    if (container.wiredDevice)
+                                        return `Ethernet (${container.wiredDevice.name})`;
+                                    return container.wifiDevice ? `WiFi (${container.wifiDevice.name})` : "No WiFi Device";
+                                }
                                 font.pointSize: 9
                             }
 
                             StyledText {
                                 text: {
+                                    if (container.wiredDevice)
+                                        return container.wiredDevice.network?.name || (container.wiredDevice.linkSpeed > 0 ? `${container.wiredDevice.linkSpeed} Mbps` : "Connected");
                                     if (!container.wifiDevice)
                                         return "Not Available";
                                     if (!Networking.wifiEnabled)
@@ -128,6 +159,7 @@ SettingsBacker {
                         }
 
                         ToggleSwitch {
+                            visible: !container.wiredDevice
                             checked: Networking.wifiEnabled
                             enabled: Networking.wifiHardwareEnabled
 
@@ -193,15 +225,35 @@ SettingsBacker {
 
                     required property WifiNetwork modelData
                     property bool expanded: false
-                    property int collapsedHeight: 52
-                    property int expandedHeight: 56 + dropdownContent.implicitHeight
+                    property bool forcePsk: false
+                    property string psk: ""
+                    property int collapsedHeight: 42
+                    property bool needsPsk: container.isSecured(modelData) && (!modelData.known || forcePsk)
+                    property int expandedHeight: 46 + dropdownContent.implicitHeight
 
                     implicitWidth: ListView.view.width
                     implicitHeight: expanded ? expandedHeight : collapsedHeight
 
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: networkCard.expanded = !networkCard.expanded
+                    function submitPsk(): void {
+                        if (!modelData || psk === "")
+                            return;
+
+                        modelData.connectWithPsk(psk);
+                        forcePsk = false;
+                        psk = "";
+                        expanded = false;
+                    }
+
+                    Connections {
+                        target: networkCard.modelData
+
+                        function onConnectionFailed(reason) {
+                            if (reason === ConnectionFailReason.NoSecrets && container.isSecured(networkCard.modelData)) {
+                                networkCard.forcePsk = true;
+                                networkCard.expanded = true;
+                                passwordInput.forceActiveFocus();
+                            }
+                        }
                     }
 
                     Behavior on implicitHeight {
@@ -213,13 +265,13 @@ SettingsBacker {
                     RowLayout {
                         id: mainRow
                         spacing: 8
-                        height: 36
+                        height: 30
 
                         anchors {
                             top: parent.top
                             left: parent.left
                             right: parent.right
-                            margins: 8
+                            margins: 6
                         }
 
                         IconImage {
@@ -239,12 +291,12 @@ SettingsBacker {
                                 return Quickshell.iconPath("network-wireless-20");
                             }
 
-                            Layout.preferredWidth: 24
-                            Layout.preferredHeight: 24
+                            Layout.preferredWidth: 20
+                            Layout.preferredHeight: 20
                         }
 
                         ColumnLayout {
-                            spacing: 4
+                            spacing: 0
                             Layout.fillWidth: true
 
                             StyledText {
@@ -252,49 +304,6 @@ SettingsBacker {
                                 font.pointSize: 9
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
-                            }
-
-                            RowLayout {
-                                spacing: 4
-                                Layout.fillWidth: true
-
-                                Rectangle {
-                                    radius: 3
-
-                                    color: {
-                                        if (!networkCard.modelData)
-                                            return ShellSettings.colors.active.dark;
-                                        if (networkCard.modelData.connected)
-                                            return ShellSettings.colors.extra.open;
-                                        if (networkCard.modelData.known)
-                                            return ShellSettings.colors.active.highlight;
-
-                                        return ShellSettings.colors.active.dark;
-                                    }
-
-                                    Layout.preferredWidth: statusText.implicitWidth + 6
-                                    Layout.preferredHeight: statusText.implicitHeight + 2
-
-                                    StyledText {
-                                        id: statusText
-                                        font.pointSize: 9
-                                        color: "white"
-                                        anchors.centerIn: parent
-
-                                        text: {
-                                            if (!networkCard.modelData)
-                                                return "Unknown";
-                                            if (networkCard.modelData.stateChanging)
-                                                return "Connecting...";
-                                            if (networkCard.modelData.connected)
-                                                return "Connected";
-                                            if (networkCard.modelData.known)
-                                                return "Saved";
-
-                                            return "Available";
-                                        }
-                                    }
-                                }
                             }
                         }
 
@@ -307,6 +316,9 @@ SettingsBacker {
                                 if (networkCard.modelData) {
                                     if (networkCard.modelData.connected) {
                                         networkCard.modelData.disconnect();
+                                    } else if (networkCard.needsPsk) {
+                                        networkCard.expanded = true;
+                                        passwordInput.forceActiveFocus();
                                     } else {
                                         networkCard.modelData.connect();
                                     }
@@ -332,6 +344,11 @@ SettingsBacker {
 
                             Layout.preferredWidth: 24
                             Layout.preferredHeight: 24
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: networkCard.expanded = !networkCard.expanded
+                            }
                         }
                     }
 
@@ -339,7 +356,7 @@ SettingsBacker {
                         id: dropdownContent
                         spacing: 6
                         opacity: networkCard.expanded ? 1 : 0
-                        visible: opacity > 0 && networkCard.modelData && networkCard.modelData.known
+                        visible: opacity > 0 && networkCard.modelData && (networkCard.modelData.known || networkCard.needsPsk)
 
                         Behavior on opacity {
                             NumberAnimation {
@@ -361,9 +378,39 @@ SettingsBacker {
                             Layout.preferredHeight: 1
                         }
 
-                        // Forget Button
+                        RowLayout {
+                            visible: networkCard.needsPsk
+                            spacing: 6
+                            Layout.fillWidth: true
+
+                            StyledTextInput {
+                                id: passwordInput
+                                text: networkCard.psk
+                                placeholderText: "Password"
+                                echoMode: TextInput.Password
+                                onTextChanged: networkCard.psk = text
+                                onAccepted: networkCard.submitPsk()
+
+                                Layout.fillWidth: true
+                            }
+
+                            StyledButton {
+                                enabled: networkCard.psk !== ""
+                                Layout.preferredWidth: 72
+                                Layout.preferredHeight: 28
+
+                                onClicked: networkCard.submitPsk()
+
+                                StyledText {
+                                    text: "Connect"
+                                    anchors.centerIn: parent
+                                }
+                            }
+                        }
+
                         StyledButton {
                             enabled: networkCard.modelData !== null && networkCard.modelData.known
+                            visible: networkCard.modelData !== null && networkCard.modelData.known
 
                             Layout.fillWidth: true
                             Layout.preferredHeight: 24

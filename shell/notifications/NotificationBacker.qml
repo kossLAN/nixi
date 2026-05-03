@@ -10,11 +10,15 @@ Scope {
     property Component body: null
     property Component icon: null
     property Component buttons: null
+    property string iconSource: ""
+    property string badgeIconSource: ""
+    property bool badgeIconVisible: false
     property var timeTracked: new Date()
 
     property bool showOnFullscreen: false
     property bool hovered: false
     property bool hidden: false
+    property bool ownedByNotificationCenter: false
 
     // discard: request to discard (starts animation if visible)
     // discarded: discard complete (triggers removal)

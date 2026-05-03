@@ -18,6 +18,7 @@ Item {
         color: ShellSettings.colors.active.light
         hoverColor: ShellSettings.colors.extra.close
         onClicked: root.clicked()
+        padding: 2
 
         anchors {
             fill: parent

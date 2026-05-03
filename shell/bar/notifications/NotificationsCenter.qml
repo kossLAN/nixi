@@ -8,7 +8,8 @@ import qs.notifications
 
 IconButton {
     id: root
-    onClicked: showMenu = !showMenu
+    onClicked: Notifications.centerOpen = !Notifications.centerOpen
+    padding: 1
 
     source: {
         if (Notifications.hasHiddenNotifications)
@@ -18,15 +19,14 @@ IconButton {
     }
 
     required property var bar
-    property bool showMenu: false
 
     property PopupItem menu: PopupItem {
         id: menu
 
         owner: root
         popup: root.bar.popup
-        show: root.showMenu
-        onClosed: root.showMenu = false
+        show: Notifications.centerOpen
+        onClosed: Notifications.centerOpen = false
         implicitWidth: 525
         fullHeight: true
         expand: Popup.ExpandRight

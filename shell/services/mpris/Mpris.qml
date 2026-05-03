@@ -11,15 +11,23 @@ Singleton {
 
     property MprisPlayer trackedPlayer
 
-    property list<MprisPlayer> sortedPlayers: [...Mpris.players.values].sort((a, b) => {
-        if (a === root.trackedPlayer)
-            return -1;
+    function hasTitle(player: MprisPlayer): bool {
+        return (player.trackTitle ?? "").trim() !== "";
+    }
 
-        if (b === root.trackedPlayer)
-            return 1;
+    function updateSortedPlayers(): void {
+        root.sortedPlayers = [...Mpris.players.values].filter(p => root.hasTitle(p)).sort((a, b) => {
+            if (a === root.trackedPlayer)
+                return -1;
 
-        return 0;
-    })
+            if (b === root.trackedPlayer)
+                return 1;
+
+            return 0;
+        });
+    }
+
+    property list<MprisPlayer> sortedPlayers
 
     IpcHandler {
         target: "mpris"
@@ -57,29 +65,69 @@ Singleton {
             target: modelData
 
             Component.onCompleted: {
+                if (!root.hasTitle(modelData))
+                    return;
+
                 if (root.trackedPlayer == null || modelData.isPlaying) {
                     root.trackedPlayer = modelData;
                 }
+
+                root.updateSortedPlayers();
             }
 
             Component.onDestruction: {
                 if (root.trackedPlayer == null || !root.trackedPlayer.isPlaying) {
                     for (const player of Mpris.players.values) {
-                        if (player.playbackState === MprisPlaybackState.Playing) {
+                        if (root.hasTitle(player) && player.playbackState === MprisPlaybackState.Playing) {
                             root.trackedPlayer = player;
                             break;
                         }
                     }
 
                     if (root.trackedPlayer == null && Mpris.players.values.length != 0) {
-                        root.trackedPlayer = Mpris.players.values[0];
+                        for (const player of Mpris.players.values) {
+                            if (root.hasTitle(player)) {
+                                root.trackedPlayer = player;
+                                break;
+                            }
+                        }
                     }
                 }
+
+                root.updateSortedPlayers();
             }
 
             function onPlaybackStateChanged() {
+                if (!root.hasTitle(modelData))
+                    return;
+
                 if (root.trackedPlayer !== modelData)
                     root.trackedPlayer = modelData;
+            }
+
+            function onTrackTitleChanged() {
+                root.updateSortedPlayers();
+
+                if (root.hasTitle(modelData)) {
+                    if (root.trackedPlayer == null || modelData.isPlaying)
+                        root.trackedPlayer = modelData;
+                } else if (root.trackedPlayer === modelData) {
+                    root.trackedPlayer = null;
+
+                    for (const player of Mpris.players.values) {
+                        if (root.hasTitle(player) && player.playbackState === MprisPlaybackState.Playing) {
+                            root.trackedPlayer = player;
+                            return;
+                        }
+                    }
+
+                    for (const player of Mpris.players.values) {
+                        if (root.hasTitle(player)) {
+                            root.trackedPlayer = player;
+                            return;
+                        }
+                    }
+                }
             }
         }
     }

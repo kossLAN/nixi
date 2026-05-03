@@ -130,6 +130,7 @@ StyledRectangle {
                         color: ShellSettings.colors.active.light
                         source: Quickshell.iconPath("window-close")
                         implicitSize: 16
+                        padding: 2
                         onClicked: root.backer.discard()
                     }
                 }

@@ -69,7 +69,11 @@ TrayBacker {
 
         IconImage {
             source: root.getIcon(UPower.displayDevice)
-            anchors.fill: parent
+
+            anchors {
+                fill: parent
+                margins: 1
+            }
         }
     }
 

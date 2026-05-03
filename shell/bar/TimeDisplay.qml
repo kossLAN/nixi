@@ -8,7 +8,7 @@ StyledText {
     id: text
     color: ShellSettings.colors.active.windowText
     text: `${hours}:${minutes} ${ap}`
-    font.pointSize: 11
+    font.pointSize: ShellSettings.sizing.barHeight / 2.5
     verticalAlignment: Text.AlignVCenter
 
     property string ap: sysClock.hours >= 12 ? "PM" : "AM"

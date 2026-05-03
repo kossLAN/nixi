@@ -78,18 +78,26 @@ StyledMouseArea {
             rightMargin: 4
         }
 
-        IconImage {
-            id: playIcon
+        Item {
             Layout.preferredWidth: root.height
             Layout.preferredHeight: root.height
-            source: Quickshell.iconPath(root.displayedIsPlaying ? "media-pause" : "media-play")
+
+            IconImage {
+                id: playIcon
+                source: Quickshell.iconPath(root.displayedIsPlaying ? "media-pause" : "media-play")
+
+                anchors {
+                    fill: parent
+                    margins: 1
+                }
+            }
         }
 
         StyledText {
             id: windowText
             text: root.displayedTitle
             color: ShellSettings.colors.active.windowText
-            font.pointSize: 11
+            font.pointSize: ShellSettings.sizing.barHeight / 2.5
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
@@ -139,8 +147,7 @@ StyledMouseArea {
                 return Qt.rgba(0.4, 0.3, 0.5, 1);
 
             let wave = colors[5];
-            let bgLum = (luminance(colors[0]) + luminance(colors[1])
-                       + luminance(colors[2]) + luminance(colors[3])) / 4;
+            let bgLum = (luminance(colors[0]) + luminance(colors[1]) + luminance(colors[2]) + luminance(colors[3])) / 4;
             let waveLum = luminance(wave);
 
             if (Math.abs(waveLum - bgLum) < 0.2) {

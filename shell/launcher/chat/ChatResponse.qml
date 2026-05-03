@@ -23,11 +23,6 @@ Item {
 
     implicitHeight: contentColumn.implicitHeight
 
-    function preprocessMarkdown(content) {
-        var result = content.replace(/\n/g, '\n\n').replace(/\n{3,}/g, '\n\n');
-        return result;
-    }
-
     ColumnLayout {
         id: contentColumn
         width: root.width
@@ -61,7 +56,9 @@ Item {
                 values: {
                     let result = [];
                     let content = root.text;
-                    let blockRegex = /```(\w*)\s*\n([\s\S]*?)```|\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]|\\\((.+?)\\\)|\$([^\$\s\n]+)\$/g;
+                    // Split only on fenced code blocks; MarkdownView handles all
+                    // math internally ($$, \[…\], \(…\), $…$) via MicroTeX.
+                    let blockRegex = /```(\w*)\s*\n([\s\S]*?)```/g;
                     let lastIndex = 0;
                     let match;
                     let segmentId = 0;
@@ -78,43 +75,12 @@ Item {
                             }
                         }
 
-                        if (match[2] !== undefined) {
-                            // code block
-                            result.push({
-                                id: segmentId++,
-                                type: "code",
-                                language: match[1] || "",
-                                content: match[2]
-                            });
-                        } else if (match[3] !== undefined) {
-                            // $$ display math
-                            result.push({
-                                id: segmentId++,
-                                type: "math",
-                                content: match[3].trim()
-                            });
-                        } else if (match[4] !== undefined) {
-                            // \[...\] display math
-                            result.push({
-                                id: segmentId++,
-                                type: "math",
-                                content: match[4].trim()
-                            });
-                        } else if (match[5] !== undefined) {
-                            // \(...\) inline math
-                            result.push({
-                                id: segmentId++,
-                                type: "inline-math",
-                                content: match[5].trim()
-                            });
-                        } else if (match[6] !== undefined) {
-                            // $...$ inline math
-                            result.push({
-                                id: segmentId++,
-                                type: "inline-math",
-                                content: match[6].trim()
-                            });
-                        }
+                        result.push({
+                            id: segmentId++,
+                            type: "code",
+                            language: match[1] || "",
+                            content: match[2]
+                        });
 
                         lastIndex = match.index + match[0].length;
                     }
@@ -151,39 +117,19 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: item ? item.height : 0
 
-                sourceComponent: {
-                    switch (modelData.type) {
-                    case "code":
-                        return codeBlockComponent;
-                    case "math":
-                        return mathComponent;
-                    case "inline-math":
-                        return inlineMathComponent;
-                    default:
-                        return markdownComponent;
-                    }
-                }
+                sourceComponent: modelData.type === "code" ? codeBlockComponent : markdownComponent
 
                 Component {
                     id: markdownComponent
 
-                    TextArea {
+                    MarkdownView {
                         width: root.width
+                        text: segmentLoader.modelData.content
                         color: root.textColor
-                        text: root.preprocessMarkdown(segmentLoader.modelData.content)
-                        wrapMode: Text.Wrap
-                        font.pixelSize: root.fontSize
-                        textFormat: TextEdit.MarkdownText
-                        readOnly: true
-                        selectByMouse: true
-                        selectedTextColor: root.selectedTextColor
+                        fontSize: root.fontSize
                         selectionColor: root.selectionColor
-                        background: null
-                        padding: 0
-                        leftPadding: 0
-                        rightPadding: 0
-                        topPadding: 0
-                        bottomPadding: 0
+                        selectedTextColor: root.selectedTextColor
+                        selectByMouse: true
                     }
                 }
 
@@ -346,41 +292,6 @@ Item {
                             }
 
                             theme: Repository.defaultTheme(Repository.DarkTheme)
-                        }
-                    }
-                }
-
-                Component {
-                    id: mathComponent
-
-                    Item {
-                        width: root.width
-                        implicitHeight: mathRenderer.implicitHeight + 16
-
-                        LatexRenderer {
-                            id: mathRenderer
-                            formula: segmentLoader.modelData.content
-                            fontSize: root.fontSize + 2
-                            color: root.textColor
-                            anchors.centerIn: parent
-                        }
-                    }
-                }
-
-                Component {
-                    id: inlineMathComponent
-
-                    Item {
-                        width: root.width
-                        implicitHeight: inlineMathRenderer.implicitHeight + 4
-
-                        LatexRenderer {
-                            id: inlineMathRenderer
-                            formula: segmentLoader.modelData.content
-                            fontSize: root.fontSize
-                            color: root.textColor
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
                         }
                     }
                 }

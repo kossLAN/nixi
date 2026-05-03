@@ -38,8 +38,12 @@ TrayBacker {
 
         IconImage {
             id: icon
-            anchors.fill: parent
             source: root.icon
+
+            anchors {
+                fill: parent
+                margins: 2
+            }
         }
     }
 
@@ -75,8 +79,12 @@ TrayBacker {
                     }
 
                     IconImage {
-                        anchors.fill: parent
-                        source: root.icon 
+                        source: root.icon
+
+                        anchors {
+                            fill: parent
+                            margins: 1
+                        }
                     }
                 }
             }
@@ -148,7 +156,7 @@ TrayBacker {
 
                             anchors {
                                 fill: parent
-                                margins: 2
+                margins: 1
                             }
                         }
 

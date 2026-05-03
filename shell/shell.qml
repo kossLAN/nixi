@@ -12,16 +12,15 @@ import qs.wallpaper
 import qs.launcher
 import qs.polkit
 
-import qs.services.idlehandler
 import qs.services.mpris
 import qs.services.gsr
+import qs.services.screenshot
 
 ShellRoot {
     Bar {}
     Wallpaper {}
     VolumeOSD {}
     Polkit {}
-    IdleHandler {}
 
     Component.onCompleted: {
         Notifications.init();
@@ -29,5 +28,6 @@ ShellRoot {
         LockScreen.init();
         Mpris.init();
         GpuScreenRecord.init();
+        Screenshot.init();
     }
 }

@@ -8,15 +8,18 @@ import Quickshell.Widgets
 
 import qs
 import qs.widgets
+import qs.launcher
 import qs.services.chat
 
 ColumnLayout {
     id: root
 
+    property bool floating: false
+
     spacing: 0
 
     RowLayout {
-        spacing: 16
+        spacing: 0
 
         Layout.fillWidth: true
         Layout.preferredHeight: 32
@@ -27,6 +30,8 @@ ColumnLayout {
             width: 8
             height: 8
             radius: 4
+
+            Layout.rightMargin: 16
 
             color: {
                 if (ChatConnector.busy)
@@ -60,11 +65,52 @@ ColumnLayout {
 
             onSelected: (providerId, model) => ChatConnector.setProviderAndModel(providerId, model)
         }
-    }
 
-    Separator {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 1
+        StyledButton {
+            id: floatingButton
+            checked: root.floating
+            color: ShellSettings.colors.active.mid
+            checkedColor: ShellSettings.colors.inactive.highlight
+            hoverColor: root.floating ? ShellSettings.colors.extra.close : ShellSettings.colors.inactive.highlight
+
+            Layout.preferredWidth: 28
+            Layout.preferredHeight: 28
+            Layout.leftMargin: 4
+
+            onClicked: {
+                if (root.floating) {
+                    Launcher.closeFloatingChat();
+                } else {
+                    Launcher.openFloatingChat();
+                }
+            }
+
+            IconImage {
+                source: Quickshell.iconPath("focus-windows")
+                anchors.fill: parent
+                anchors.margins: 4
+            }
+        }
+
+        StyledButton {
+            id: searchButton
+            visible: ChatConnector.supportsInternetSearch
+            checked: ChatConnector.internetSearchEnabled
+            color: ShellSettings.colors.active.button
+            hoverColor: checked ? ShellSettings.colors.inactive.highlight : ShellSettings.colors.active.highlight
+
+            Layout.preferredWidth: 28
+            Layout.preferredHeight: 28
+            Layout.leftMargin: 4
+
+            onClicked: ChatConnector.toggleInternetSearch()
+
+            IconImage {
+                source: Quickshell.iconPath("globe")
+                anchors.fill: parent
+                anchors.margins: 4
+            }
+        }
     }
 
     // Messages area
@@ -97,25 +143,35 @@ ColumnLayout {
             model: ChatConnector.history
 
             footer: Rectangle {
+                id: streamingFooter
+
+                property bool hasResponse: ChatConnector.currentResponse !== ""
+
                 width: messagesList.width
-                height: ChatConnector.currentResponse !== "" ? streamingContent.height + 16 : 0
+                height: hasResponse ? footerColumn.implicitHeight + 16 : 0
                 color: "transparent"
 
-                ChatResponse {
-                    id: streamingContent
-                    visible: ChatConnector.currentResponse !== ""
-                    text: ChatConnector.currentResponse
-                    implicitWidth: messagesList.width - 16
+                Column {
+                    id: footerColumn
+                    spacing: 6
+                    width: messagesList.width - 16
 
                     anchors {
                         top: parent.top
                         right: parent.right
                         margins: 8
                     }
+
+                    ChatResponse {
+                        id: streamingContent
+                        visible: streamingFooter.hasResponse
+                        width: parent.width
+                        text: ChatConnector.currentResponse
+                    }
                 }
             }
 
-            delegate: Rectangle {
+            delegate: Item {
                 id: messageDelegate
 
                 required property var modelData
@@ -124,8 +180,7 @@ ColumnLayout {
                 property bool isUser: modelData.role === "user"
 
                 implicitWidth: ListView.view.width
-                implicitHeight: (isUser ? userRequest.height : markdownContent.height) + 16
-                color: messageHover.hovered ? ShellSettings.colors.active.light : "transparent"
+                implicitHeight: (isUser ? userRequest.height : markdownContent.implicitHeight) + 16
 
                 HoverHandler {
                     id: messageHover
@@ -150,8 +205,8 @@ ColumnLayout {
                 ChatResponse {
                     id: markdownContent
                     visible: !messageDelegate.isUser
+                    width: messagesList.width - 16
                     text: messageDelegate.modelData.content
-                    implicitWidth: messagesList.width - 16
 
                     anchors {
                         top: parent.top

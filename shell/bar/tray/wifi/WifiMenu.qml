@@ -15,11 +15,11 @@ TrayBacker {
 
     trayId: "wifi"
 
-    icon: Quickshell.iconPath(getIcon()) 
+    icon: Quickshell.iconPath(getIcon())
 
     function getIcon() {
         if (root.ethernetConnected) {
-            return "network-wired";
+            return "nm-device-wired";
         }
 
         if (Networking.wifiEnabled && root.wifiDevice && root.wifiDevice.connected) {
@@ -60,26 +60,33 @@ TrayBacker {
         return null;
     }
 
-    property bool ethernetConnected: {
+    property var wiredDevice: {
         if (!Networking.devices)
-            return false;
+            return null;
+
         for (let i = 0; i < Networking.devices.values.length; i++) {
             const dev = Networking.devices.values[i];
 
-            // Currently is no Ethernet device type... hopefully added later
-            if (dev.type !== DeviceType.Wifi && dev.connected) {
-                return true;
+            if (dev.type !== DeviceType.Wifi) {
+                return dev;
             }
         }
-        return false;
+
+        return null;
     }
+
+    property bool ethernetConnected: wiredDevice !== null
 
     button: StyledMouseArea {
         onClicked: root.clicked()
 
         IconImage {
-            anchors.fill: parent
             source: root.icon
+
+            anchors {
+                fill: parent
+                margins: 1
+            }
         }
     }
 
@@ -105,12 +112,24 @@ TrayBacker {
                 Layout.fillWidth: true
                 Layout.preferredHeight: menu.entryHeight
 
-                IconImage {
-                    source: Quickshell.iconPath("network-wireless-100")
+                Item {
+                    width: 24
+                    height: 24
+                    clip: true
 
-                    Layout.preferredWidth: this.height
-                    Layout.fillHeight: true
-                    Layout.margins: 4
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: 4
+                    Layout.rightMargin: 4
+
+                    IconImage {
+                        source: Quickshell.iconPath(root.wiredDevice ? "nm-device-wired" : "network-wireless-100")
+                        implicitWidth: 24
+                        implicitHeight: 24
+                        width: 24
+                        height: 24
+                        anchors.centerIn: parent
+                        mipmap: true
+                    }
                 }
 
                 ColumnLayout {
@@ -120,7 +139,11 @@ TrayBacker {
                     Layout.alignment: Qt.AlignVCenter
 
                     StyledText {
-                        text: root.wifiDevice ? `WiFi (${root.wifiDevice.name})` : "WiFi (No Device)"
+                        text: {
+                            if (root.wiredDevice)
+                                return `Ethernet (${root.wiredDevice.name})`;
+                            return root.wifiDevice ? `WiFi (${root.wifiDevice.name})` : "WiFi (No Device)";
+                        }
                         color: ShellSettings.colors.active.windowText
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -129,6 +152,8 @@ TrayBacker {
 
                     StyledText {
                         text: {
+                            if (root.wiredDevice)
+                                return root.wiredDevice.network?.name || (root.wiredDevice.linkSpeed > 0 ? `${root.wiredDevice.linkSpeed} Mbps` : "Connected");
                             if (!root.wifiDevice)
                                 return "Not Available";
                             if (!Networking.wifiEnabled)
@@ -146,6 +171,7 @@ TrayBacker {
                 }
 
                 ToggleSwitch {
+                    visible: !root.wiredDevice
                     checked: Networking.wifiEnabled
                     enabled: Networking.wifiHardwareEnabled
 

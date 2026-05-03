@@ -139,7 +139,7 @@ LauncherBacker {
             StyledRectangle {
                 id: searchContainer
 
-                color: ShellSettings.colors.active.base
+                color: ShellSettings.colors.active.alternateBase
                 radius: 8
 
                 Layout.preferredWidth: 525

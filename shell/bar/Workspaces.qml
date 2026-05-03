@@ -1,163 +1,144 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
-import Quickshell.Widgets
+import Quickshell.WindowManager
 import qs
 import qs.widgets
-import qs.services.niri
 
 Item {
     id: root
 
     required property var screen
 
-    property var activeWorkspace: Niri.state.activeWorkspaces.filter(workspace => {
-        return workspace.output === root.screen.name;
-    })[0]
+    readonly property var screenProj: WindowManager.screenProjection(root.screen)
+    readonly property real workspaceFontPointSize: ShellSettings.sizing.barHeight / 2.5
+    readonly property int workspaceIndicatorHeight: Math.max(2, Math.round(ShellSettings.sizing.barHeight / 8))
+    readonly property int workspacePadding: 8
 
-    property var sortedWindows: Niri.state.windows.filter(w => w.workspace_id === root.activeWorkspace.id).sort((a, b) => {
-        if (a.is_floating)
-            return b;
+    readonly property var sortedWorkspaces: {
+        if (!screenProj?.windowsets?.length)
+            return [];
 
-        const pa = a.layout.pos_in_scrolling_layout;
-        const pb = b.layout.pos_in_scrolling_layout;
+        return [...screenProj.windowsets].sort((a, b) => (a.coordinates?.[0] ?? 0) - (b.coordinates?.[0] ?? 0));
+    }
 
-        if (pa == null || pb == null)
-            return b;
+    function activeWorkspaceIndex() {
+        for (let i = 0; i < sortedWorkspaces.length; ++i) {
+            if (sortedWorkspaces[i].active)
+                return i;
+        }
 
-        return pa[0] !== pb[0] ? pa[0] - pb[0] : pa[1] - pb[1];
-    })
+        return -1;
+    }
 
-    property int itemSize: height + layout.spacing
+    function syncCurrentWorkspace() {
+        const activeIndex = activeWorkspaceIndex();
 
-    RowLayout {
-        id: layout
+        if (activeIndex >= 0)
+            workspaceList.currentIndex = activeIndex;
+    }
+
+    function workspaceLabel(workspace, index) {
+        if (!workspace)
+            return "";
+
+        const label = workspace.name ?? workspace.title ?? workspace.idx ?? workspace.id;
+
+        if (label !== undefined && label !== null && `${label}` !== "")
+            return `${label}`;
+
+        return `${(workspace.coordinates?.[0] ?? index) + 1}`;
+    }
+
+    StyledListView {
+        id: workspaceList
         anchors.fill: parent
+        clip: true
+        orientation: ListView.Horizontal
+        spacing: 0
+        interactive: false
 
-        StyledMouseArea {
-            Layout.preferredWidth: height
-            Layout.fillHeight: true
+        highlightFollowsCurrentItem: true
+        highlightMoveVelocity: -1
+        highlightMoveDuration: 200
+        highlightRangeMode: ListView.ApplyRange
+        snapMode: ListView.SnapToItem
 
-            onClicked: Niri.toggleOverview();
+        preferredHighlightBegin: 0
+        preferredHighlightEnd: width
 
-            Text {
-                id: workspaceNumber
-                text: displayedTitle
-                color: ShellSettings.colors.active.text
-                anchors.centerIn: parent
+        onCountChanged: root.syncCurrentWorkspace()
+        Component.onCompleted: root.syncCurrentWorkspace()
 
-                property string activeTitle: root.activeWorkspace?.idx ?? "0"
-                property string displayedTitle: activeTitle
+        model: ScriptModel {
+            values: root.sortedWorkspaces
+        }
 
-                onActiveTitleChanged: fadeOut.start()
+        highlight: Item {
+            id: workspaceIndicator
 
-                NumberAnimation {
-                    id: fadeOut
-                    target: workspaceNumber
-                    property: "opacity"
-                    to: 0
-                    duration: 100
-                    onFinished: {
-                        workspaceNumber.displayedTitle = workspaceNumber.activeTitle;
-                        fadeIn.start();
-                    }
+            visible: workspaceList.currentIndex >= 0
+            width: workspaceList.currentItem ? workspaceList.currentItem.width : 0
+            height: workspaceList.height
+
+            function indicatorWidth() {
+                if (!workspaceList.currentItem)
+                    return 0;
+
+                return Math.max(0, workspaceList.currentItem.width - (root.workspacePadding / 2));
+            }
+
+            Rectangle {
+                anchors {
+                    bottom: parent.bottom
+                    horizontalCenter: parent.horizontalCenter
                 }
 
-                NumberAnimation {
-                    id: fadeIn
-                    target: workspaceNumber
-                    property: "opacity"
-                    to: 1
-                    duration: 100
-                }
+                width: workspaceIndicator.indicatorWidth()
+                height: root.workspaceIndicatorHeight
+                radius: height / 2
+                color: ShellSettings.colors.active.accent
             }
         }
 
-        StyledListView {
-            id: workspaceList
-            clip: true
-            orientation: ListView.Horizontal
-            spacing: layout.spacing
-            interactive: false
+        delegate: StyledMouseArea {
+            id: workspaceButton
 
-            highlightMoveVelocity: -1
-            highlightMoveDuration: 200
-            highlightRangeMode: ListView.ApplyRange
-            snapMode: ListView.SnapToItem
+            required property var modelData
+            required property int index
 
-            preferredHighlightBegin: 0
-            preferredHighlightEnd: width - height
+            readonly property bool isActive: modelData.active
+            readonly property bool isCurrent: ListView.isCurrentItem
 
-            currentIndex: {
-                let index = 0;
-                let focusedIndex = 0;
+            checked: false
+            hoverColor: isCurrent ? "transparent" : ShellSettings.colors.inactive.accent
+            color: "transparent"
+            radius: 0
 
-                sortedWindows.forEach(window => {
-                    index++;
+            implicitHeight: ListView.view.height
+            implicitWidth: Math.max(ListView.view.height, workspaceName.implicitWidth + root.workspacePadding)
 
-                    if (window.is_focused)
-                        focusedIndex = index;
-                });
-
-                return focusedIndex - 1;
+            onClicked: workspaceButton.modelData.activate()
+            onIsActiveChanged: {
+                if (isActive)
+                    workspaceList.currentIndex = workspaceButton.index;
             }
 
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
-            model: ScriptModel {
-                objectProp: "id"
-
-                values: root.sortedWindows
+            Component.onCompleted: {
+                if (isActive)
+                    workspaceList.currentIndex = workspaceButton.index;
             }
 
-            highlight: Rectangle {
-                color: ShellSettings.colors.active.accent
-            }
-
-            delegate: StyledMouseArea {
-                id: workspaceButton
-                radius: 0
-                hoverColor: modelData.is_focused ? "transparent" : ShellSettings.colors.inactive.accent
-                onClicked: Niri.focusWindow(modelData.id)
-
-                required property var modelData
-
-                implicitWidth: ListView.view.height
-                implicitHeight: ListView.view.height
-
-                Rectangle {
-                    visible: workspaceButton.modelData.is_urgent
-                    color: "#e67b10"
-                    anchors.fill: parent
-                }
-
-                IconImage {
-                    id: appIcon
-
-                    source: {
-                        // If app_id is "" its absolutely cooked
-                        if (workspaceButton.modelData.app_id === "")
-                            return Quickshell.iconPath("error");
-
-                        // Try for desktop entry first
-                        const desktopIcon = DesktopEntries.byId(workspaceButton.modelData.app_id)?.icon ?? "";
-                        const icon = Quickshell.iconPath(desktopIcon, true);
-
-                        if (icon != "")
-                            return icon;
-
-                        // Fuck it last resort
-                        return Quickshell.iconPath(workspaceButton.modelData.app_id, "error");
-                    }
-
-                    anchors {
-                        fill: parent
-                        margins: 1
-                    }
-                }
+            Text {
+                id: workspaceName
+                anchors.fill: parent
+                color: ShellSettings.colors.active.text
+                font.pointSize: root.workspaceFontPointSize
+                horizontalAlignment: Text.AlignHCenter
+                text: root.workspaceLabel(workspaceButton.modelData, workspaceButton.index)
+                renderType: Text.NativeRendering
+                verticalAlignment: Text.AlignVCenter
             }
         }
     }

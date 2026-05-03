@@ -5,6 +5,7 @@ import Quickshell.Wayland
 
 import qs
 import qs.notifications
+import qs.widgets
 
 import qs.bar.mpris
 import qs.bar.tray
@@ -16,8 +17,9 @@ Variants {
 
     delegate: PanelWindow {
         id: root
+
         color: ShellSettings.colors.active.window
-        implicitHeight: ShellSettings.sizing.barHeight
+        implicitHeight: BarManager.barEnabled ? ShellSettings.sizing.barHeight : 0
         screen: modelData
 
         WlrLayershell.layer: WlrLayer.Top
@@ -37,73 +39,90 @@ Variants {
             onPopupClosed: Notifications.blockToasts = false
         }
 
-        RowLayout {
+        ColumnLayout {
+            anchors.fill: parent
             spacing: 0
 
-            anchors {
-                fill: parent
-                leftMargin: 5
-                rightMargin: 5
-            }
-
-            Item {
-                id: leftSide
-                clip: true
+            Rectangle {
+                color: "transparent"
 
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-
-                Workspaces {
-                    screen: root.screen
-                    anchors.fill: parent
-                }
-            }
-
-            MprisMenu {
-                bar: root
-                Layout.maximumWidth: (root.width / 3)
-                Layout.fillHeight: true
-                Layout.alignment: Qt.AlignCenter
-            }
-
-            Item {
-                clip: true
-
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.alignment: Qt.AlignRight
 
                 RowLayout {
-                    spacing: 5
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: parent.height
-                    
-                    NotificationSpawner {
-                        Layout.preferredWidth: this.height
-                        Layout.fillHeight: true
+                    spacing: 0
+
+                    anchors {
+                        fill: parent
+                        leftMargin: 5
+                        rightMargin: 5
                     }
 
-                    Tray {
+                    Item {
+                        id: leftSide
+                        clip: true
+
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+
+                        Workspaces {
+                            screen: root.screen
+                            anchors.fill: parent
+                        }
+                    }
+
+                    MprisMenu {
                         bar: root
+                        Layout.maximumWidth: (root.width / 3)
                         Layout.fillHeight: true
+                        Layout.alignment: Qt.AlignCenter
                     }
 
-                    SearchButton {
-                        Layout.preferredWidth: this.height
-                        Layout.fillHeight: true
-                    }
+                    Item {
+                        clip: true
 
-                    NotificationsCenter {
-                        bar: root
+                        Layout.fillWidth: true
                         Layout.fillHeight: true
-                    }
+                        Layout.alignment: Qt.AlignRight
 
-                    TimeDisplay {
-                        Layout.preferredWidth: 60
-                        Layout.fillHeight: true
+                        RowLayout {
+                            spacing: 5
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: parent.height
+
+                            NotificationSpawner {
+                                Layout.preferredWidth: this.height
+                                Layout.fillHeight: true
+                            }
+
+                            Tray {
+                                bar: root
+                                Layout.fillHeight: true
+                            }
+
+                            SearchButton {
+                                Layout.preferredWidth: this.height
+                                Layout.fillHeight: true
+                            }
+
+                            NotificationsCenter {
+                                bar: root
+                                Layout.preferredWidth: this.height
+                                Layout.fillHeight: true
+                            }
+
+                            TimeDisplay {
+                                Layout.fillHeight: true
+                            }
+                        }
                     }
                 }
+            }
+
+            Separator {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
             }
         }
     }

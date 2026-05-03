@@ -4,7 +4,10 @@
   cmake,
   pkg-config,
   qt6,
-  microtex ? callPackage ./microtex.nix {},
+  wayland,
+  wayland-scanner,
+  wlr-protocols,
+  microtex ? callPackage ./microtex.nix { },
   tinyxml-2,
 }:
 stdenv.mkDerivation {
@@ -14,6 +17,8 @@ stdenv.mkDerivation {
   buildInputs = [
     qt6.qtbase
     qt6.qtdeclarative
+    qt6.qtwayland
+    wayland
     microtex
     tinyxml-2
   ];
@@ -21,10 +26,12 @@ stdenv.mkDerivation {
   nativeBuildInputs = [
     cmake
     pkg-config
+    wayland-scanner
   ];
 
   cmakeFlags = [
     "-DMICROTEX_RES_DIR=${microtex}/share/microtex/res"
+    "-DWLR_PROTOCOLS_DIR=${wlr-protocols}/share/wlr-protocols"
   ];
 
   dontWrapQtApps = true;

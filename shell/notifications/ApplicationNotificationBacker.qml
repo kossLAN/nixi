@@ -1,10 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import Quickshell
-import Quickshell.Widgets
 import Quickshell.Services.Notifications
 import QtQuick
-import Qt5Compat.GraphicalEffects
 
 import qs
 
@@ -13,8 +11,52 @@ NotificationBacker {
 
     required property Notification serverNotification
     property int closeAnimDuration: 10000
+    property string notificationImage: {
+        if (!root.serverNotification)
+            return "";
+
+        if (root.serverNotification.image !== "")
+            return root.serverNotification.image;
+
+        if (root.serverNotification.appIcon !== "") {
+            if (root.serverNotification.appIcon.startsWith("/") || root.serverNotification.appIcon.startsWith("file://"))
+                return root.serverNotification.appIcon;
+
+            return Quickshell.iconPath(root.serverNotification.appIcon);
+        }
+
+        return "";
+    }
+    property string appIconSource: {
+        if (!root.serverNotification)
+            return "";
+
+        if (root.serverNotification.desktopEntry !== "") {
+            const entry = DesktopEntries.byId(root.serverNotification.desktopEntry);
+
+            if (entry?.icon)
+                return Quickshell.iconPath(entry.icon);
+        }
+
+        if (root.serverNotification.appName !== "") {
+            const entry = DesktopEntries.byId(root.serverNotification.appName.toLowerCase());
+
+            if (entry?.icon)
+                return Quickshell.iconPath(entry.icon);
+        }
+
+        return "";
+    }
 
     summary: serverNotification?.summary ?? ""
+    iconSource: notificationImage !== "" ? notificationImage : appIconSource
+    badgeIconSource: appIconSource
+    badgeIconVisible: serverNotification?.image !== "" ?? false
+
+    RetainableLock {
+        object: root.serverNotification
+        locked: root.serverNotification !== null
+    }
 
     body: Text {
         visible: root.serverNotification.body != ""
@@ -28,91 +70,10 @@ NotificationBacker {
         text: root.serverNotification.body
     }
 
-    icon: Item {
-        id: imageContainer
-
-        property bool hasImage: notificationImage !== "" || appIconSource !== ""
-        property bool hasActualImage: root.serverNotification?.image !== "" ?? false
-
-        property string notificationImage: {
-            if (!root.serverNotification)
-                return "";
-
-            if (root.serverNotification.image !== "")
-                return root.serverNotification.image;
-
-            if (root.serverNotification.appIcon !== "") {
-                if (root.serverNotification.appIcon.startsWith("/") || root.serverNotification.appIcon.startsWith("file://"))
-                    return root.serverNotification.appIcon;
-
-                return Quickshell.iconPath(root.serverNotification.appIcon);
-            }
-
-            return "";
-        }
-
-        property string appIconSource: {
-            if (!root.serverNotification)
-                return "";
-
-            if (root.serverNotification.desktopEntry !== "") {
-                const entry = DesktopEntries.byId(root.serverNotification.desktopEntry);
-
-                if (entry?.icon)
-                    return Quickshell.iconPath(entry.icon);
-            }
-
-            if (root.serverNotification.appName !== "") {
-                const entry = DesktopEntries.byId(root.serverNotification.appName.toLowerCase());
-
-                if (entry?.icon)
-                    return Quickshell.iconPath(entry.icon);
-            }
-
-            return "";
-        }
-
-        visible: hasImage
-        width: 36
-        height: 36
-
-        anchors {
-            left: parent.left
-            top: parent.top
-        }
-
-        Image {
-            id: mainImage
-            fillMode: Image.PreserveAspectCrop
-            anchors.fill: parent
-
-            source: {
-                if (imageContainer.notificationImage !== "")
-                    return imageContainer.notificationImage;
-                else
-                    return imageContainer.appIconSource;
-            }
-
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: mainImage.width
-                    height: mainImage.height
-                    radius: mainImage.width / 2
-                }
-            }
-        }
-
-        IconImage {
-            visible: imageContainer.hasActualImage && imageContainer.appIconSource !== ""
-            width: 18
-            height: 18
-            anchors.right: parent.right
-            anchors.rightMargin: -4
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: -4
-            source: imageContainer.appIconSource
-        }
+    icon: NotificationIcon {
+        iconSource: root.iconSource
+        badgeIconSource: root.badgeIconSource
+        badgeIconVisible: root.badgeIconVisible
     }
 
     buttons: CloseButton {

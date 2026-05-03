@@ -222,6 +222,7 @@ Loader {
                         iconColor: root.textColor
                         source: Quickshell.iconPath("media-playlist-shuffle")
                         implicitSize: 18
+                        padding: 1
                         opacity: (root.player?.shuffleSupported ?? false)
                             ? (root.player?.shuffle ? 1.0 : 0.4)
                             : 0
@@ -238,6 +239,7 @@ Loader {
                         iconColor: root.textColor
                         source: Quickshell.iconPath("media-skip-backward")
                         implicitSize: 24
+                        padding: 1
                         opacity: root.player?.canGoPrevious ? 1.0 : 0.4
                         onClicked: {
                             if (root.player?.canGoPrevious) {
@@ -250,7 +252,8 @@ Loader {
                         hoverColor: root.accentColor
                         iconColor: root.textColor
                         source: Quickshell.iconPath(root.player?.isPlaying ? "media-playback-pause" : "media-playback-start")
-                        implicitSize: 32
+                        implicitSize: 26
+                        padding: 1
                         opacity: root.player?.canTogglePlaying ? 1.0 : 0.4
                         onClicked: {
                             if (root.player?.canTogglePlaying) {
@@ -264,6 +267,7 @@ Loader {
                         iconColor: root.textColor
                         source: Quickshell.iconPath("media-skip-forward")
                         implicitSize: 24
+                        padding: 1
                         opacity: root.player?.canGoNext ? 1.0 : 0.4
                         onClicked: {
                             if (root.player?.canGoNext) {
@@ -276,6 +280,7 @@ Loader {
                         hoverColor: root.accentColor
                         iconColor: root.textColor
                         implicitSize: 18
+                        padding: 1
                         opacity: (root.player?.loopSupported ?? false)
                             ? (root.player?.loopState !== MprisLoopState.None ? 1.0 : 0.4)
                             : 0

@@ -13,7 +13,11 @@ StyledMouseArea {
     onClicked: Launcher.launcherOpen = !Launcher.launcherOpen 
 
     IconImage {
-        anchors.fill: parent
         source: Quickshell.iconPath("search")
+
+        anchors {
+            fill: parent
+                margins: 1
+        }
     }
 }

@@ -14,7 +14,7 @@ StyledMouseArea {
 
     // Have to use a Component to make them dynamically otherwise we just make
     // mutiple toasts for one backer
-    onClicked: Notifications.addNotification(notification.createObject(null))
+    onClicked: Notifications.createNotification(notification)
 
     IconImage {
         id: icon
@@ -26,6 +26,7 @@ StyledMouseArea {
         id: toast
 
         summary: "Lorem Ipsum is simply dummy text of the printing and typesetting industry"
+        iconSource: Quickshell.iconPath("settings")
 
         body: Text {
             color: ShellSettings.colors.active.text.darker(1.25)

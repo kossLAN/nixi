@@ -19,8 +19,15 @@ stdenv.mkDerivation {
     hash = "sha256-U6zqh+VqoLtlE0IwgfwjY9zt8e5/2R3cqf5fWXwoIi0=";
   };
 
-  nativeBuildInputs = [cmake pkg-config];
-  buildInputs = [qt6.qtbase tinyxml-2 fontconfig];
+  nativeBuildInputs = [
+    cmake
+    pkg-config
+  ];
+  buildInputs = [
+    qt6.qtbase
+    tinyxml-2
+    fontconfig
+  ];
 
   cmakeFlags = [
     "-DQT=ON"

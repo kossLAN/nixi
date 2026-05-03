@@ -71,9 +71,11 @@ ListView {
         NotificationItem {
             id: notificationItem
             menu: root.menu
-            x: delegate.contentX
 
             implicitWidth: parent.width
+
+            scale: delegate.contentScale
+            transformOrigin: Item.Center
 
             Behavior on implicitHeight {
                 enabled: !entryAnimation.running
@@ -90,12 +92,25 @@ ListView {
         NotificationBacker {
             id: groupBacker
             summary: delegate.latest?.summary ?? ""
-            icon: delegate.latest?.icon ?? null
+            iconSource: delegate.latest?.iconSource ?? ""
+            badgeIconSource: delegate.latest?.badgeIconSource ?? ""
+            badgeIconVisible: delegate.latest?.badgeIconVisible ?? false
+            icon: groupBacker.iconSource !== "" ? groupIconComponent : (delegate.latest?.icon ?? null)
             timeTracked: delegate.latest?.timeTracked ?? new Date()
 
             body: bodyComponent
 
             onDiscard: delegate.discard()
+        }
+
+        Component {
+            id: groupIconComponent
+
+            NotificationIcon {
+                iconSource: groupBacker.iconSource
+                badgeIconSource: groupBacker.badgeIconSource
+                badgeIconVisible: groupBacker.badgeIconVisible
+            }
         }
 
         Component {
@@ -121,7 +136,7 @@ ListView {
             }
         }
 
-        property real contentX: 0
+        property real contentScale: 1
 
         Component.onCompleted: {
             if (!root.animatedSummaries[delegate.summary]) {
@@ -133,9 +148,9 @@ ListView {
         NumberAnimation {
             id: entryAnimation
             target: delegate
-            property: "contentX"
-            from: root.width
-            to: 0
+            property: "contentScale"
+            from: 0
+            to: 1
             duration: 200
             easing.type: Easing.OutCubic
         }
@@ -143,9 +158,9 @@ ListView {
         NumberAnimation {
             id: exitAnimation
             target: delegate
-            property: "contentX"
-            from: 0
-            to: root.width
+            property: "contentScale"
+            from: 1
+            to: 0
             duration: 200
             easing.type: Easing.InCubic
 

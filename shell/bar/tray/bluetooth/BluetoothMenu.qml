@@ -28,8 +28,12 @@ TrayBacker {
         onClicked: root.clicked()
 
         IconImage {
-            anchors.fill: parent
             source: root.icon
+
+            anchors {
+                fill: parent
+                margins: 1
+            }
         }
     }
 

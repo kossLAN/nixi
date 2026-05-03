@@ -27,6 +27,7 @@ Singleton {
 
     LockContext {
         id: context
+        locked: persist.locked
 
         Connections {
             target: context.state
@@ -44,7 +45,7 @@ Singleton {
         WlSessionLockSurface {
             LockSurface {
                 state: context.state
-                wallpaper: ShellSettings.settings.wallpaperUrl
+                wallpaper: "root:resources/general/greeter.jpg"
                 anchors.fill: parent
             }
         }

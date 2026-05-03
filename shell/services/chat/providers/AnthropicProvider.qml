@@ -54,17 +54,20 @@ ChatProvider {
     property int _lastProcessedIndex: 0
 
     function _processStreamingResponse(): void {
-        if (!_chatRequest) return;
+        if (!_chatRequest)
+            return;
 
         let responseText = _chatRequest.responseText;
-        if (responseText.length <= _lastProcessedIndex) return;
+        if (responseText.length <= _lastProcessedIndex)
+            return;
 
         let newData = responseText.substring(_lastProcessedIndex);
         let lines = newData.split("\n");
 
         for (let i = 0; i < lines.length - 1; i++) {
             let line = lines[i].trim();
-            if (line === "") continue;
+            if (line === "")
+                continue;
 
             if (line.startsWith("data: ")) {
                 let jsonStr = line.substring(6);
@@ -100,8 +103,7 @@ ChatProvider {
                         root._chatRequest = null;
                         return;
                     }
-                } catch (e) {
-                }
+                } catch (e) {}
             }
         }
 
@@ -119,7 +121,7 @@ ChatProvider {
         }
 
         let xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = function () {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 if (xhr.status === 200) {
                     try {
@@ -251,7 +253,7 @@ ChatProvider {
         let xhr = new XMLHttpRequest();
         root._chatRequest = xhr;
 
-        xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = function () {
             if (xhr.readyState === XMLHttpRequest.LOADING) {
                 root._processStreamingResponse();
             }
@@ -293,6 +295,47 @@ ChatProvider {
             root.busy = false;
             root.errorMessage = "Request cancelled";
         }
+    }
+
+    function generateTitle(userMessage, assistantResponse, callback): void {
+        if (root.apiKey === "" || root.currentModel === "")
+            return;
+
+        let prompt = `Summarize the following conversation in 5 words or fewer. Reply with only the title, no quotes, no punctuation.\n\nUser: ${userMessage}\nAssistant: ${assistantResponse}`;
+
+        let payload = {
+            model: root.currentModel,
+            messages: [
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            stream: false,
+            max_tokens: 32
+        };
+
+        let xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    try {
+                        let response = JSON.parse(xhr.responseText);
+                        let title = (response.content?.[0]?.text ?? "").trim();
+                        if (title !== "")
+                            callback(title);
+                    } catch (e) {
+                        console.warn("Anthropic: Failed to parse title response:", e);
+                    }
+                }
+            }
+        };
+
+        xhr.open("POST", `${root.apiEndpoint}/v1/messages`);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("x-api-key", root.apiKey);
+        xhr.setRequestHeader("anthropic-version", root.apiVersion);
+        xhr.send(JSON.stringify(payload));
     }
 
     function checkAvailability(): void {

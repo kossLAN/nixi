@@ -20,8 +20,6 @@ Singleton {
     property list<ChatProvider> providers: [
         OllamaProvider {},
         AnthropicProvider {},
-        // MinimaxProvider {},
-        GitHubCopilotProvider {}
     ]
 
     // Current active provider
@@ -33,14 +31,23 @@ Singleton {
     property bool busy: currentProvider ? currentProvider.busy : false
     property string errorMessage: currentProvider ? currentProvider.errorMessage : ""
 
+    // Internet search toggle (provider-level feature)
+    property bool supportsInternetSearch: currentProvider?.supportsInternetSearch ?? false
+    property bool internetSearchEnabled: currentProvider?.internetSearchEnabled ?? true
+
+    function toggleInternetSearch(): void {
+        if (currentProvider?.supportsInternetSearch)
+            currentProvider.internetSearchEnabled = !currentProvider.internetSearchEnabled;
+    }
+
     // Current streaming response
     property string currentResponse: ""
 
     // Conversation history: [{id: int, role: "user"|"assistant", content: string, timestamp: date}]
     property var history: []
 
-    // Current conversation
-    property int currentConversationId: -1
+    // Current conversation (int for local providers, string UUID for remote)
+    property var currentConversationId: null
     property var conversations: []  // [{id, title, created_at, updated_at}]
 
     signal responseChunk(string chunk)
@@ -151,6 +158,12 @@ Singleton {
     }
 
     function loadConversations(): void {
+        // Remote history providers manage their own conversations
+        if (currentProvider?.remoteHistory) {
+            currentProvider.loadRemoteConversations();
+            return;
+        }
+
         let db = _getDatabase();
         let convs = [];
 
@@ -172,7 +185,16 @@ Singleton {
         conversations = convs;
     }
 
-    function loadConversation(conversationId: int): void {
+    function loadConversation(conversationId): void {
+        // Remote history providers load from server
+        if (currentProvider?.remoteHistory) {
+            currentConversationId = conversationId;
+            history = [];
+            historyUpdated();
+            currentProvider.loadRemoteConversation(conversationId);
+            return;
+        }
+
         let db = _getDatabase();
         let msgs = [];
 
@@ -205,7 +227,22 @@ Singleton {
         historyUpdated();
     }
 
-    function deleteConversation(conversationId: int): void {
+    function deleteConversation(conversationId): void {
+        // Remote history providers delete on server
+        if (currentProvider?.remoteHistory) {
+            currentProvider.deleteRemoteConversation(conversationId, function(success) {
+                if (success) {
+                    if (root.currentConversationId === conversationId) {
+                        root.currentConversationId = null;
+                        root.history = [];
+                        root.historyUpdated();
+                    }
+                    root.loadConversations();
+                }
+            });
+            return;
+        }
+
         let db = _getDatabase();
 
         db.transaction(function (tx) {
@@ -214,7 +251,7 @@ Singleton {
         });
 
         if (currentConversationId === conversationId) {
-            currentConversationId = -1;
+            currentConversationId = null;
             history = [];
             historyUpdated();
         }
@@ -222,7 +259,7 @@ Singleton {
         loadConversations();
     }
 
-    function updateConversationTitle(conversationId: int, title: string): void {
+    function updateConversationTitle(conversationId, title: string): void {
         let db = _getDatabase();
 
         db.transaction(function (tx) {
@@ -233,18 +270,12 @@ Singleton {
     }
 
     function _autoGenerateTitle(content: string): string {
-        let title = content.substring(0, 50).trim();
-
-        if (content.length > 50)
-            title += "...";
-
-        return title;
+        return "New conversation";
     }
 
     function _restoreProviderState(): void {
         for (let provider of providers) {
             const state = chatAdapter.providerState[provider.providerId];
-            console.log("Restoring provider:", provider.providerId, "state:", JSON.stringify(state));
 
             if (state?.endpoint)
                 provider.apiEndpoint = state.endpoint;
@@ -252,14 +283,12 @@ Singleton {
             if (state?.enabled !== undefined)
                 provider.enabled = state.enabled;
 
-            if (state?.apiKey) {
-                console.log("Setting API key for:", provider.providerId, "key length:", state.apiKey.length);
+            if (state?.apiKey)
                 provider.apiKey = state.apiKey;
-                console.log("Provider apiKey after setting:", provider.providerId, "=", provider.apiKey ? "set" : "empty");
-            }
         }
 
         refreshAllModels();
+        loadConversations();
     }
 
     function getProviderModel(providerId: string): string {
@@ -348,9 +377,28 @@ Singleton {
         }
 
         function onResponseComplete(fullResponse) {
+            // Capture state before addToHistory mutates history
+            const isFirstExchange = root.history.length === 1;
+            const firstUserMessage = isFirstExchange ? root.history[0].content : "";
+            const convId = root.currentConversationId;
+            const isRemote = root.currentProvider?.remoteHistory ?? false;
+
             root.addToHistory("assistant", fullResponse);
             root.currentResponse = "";
             root.responseComplete(fullResponse);
+
+            // Remote history providers: refresh the conversation list (server generates titles)
+            if (isRemote) {
+                root.loadConversations();
+                return;
+            }
+
+            // After the first exchange, ask the AI for a real title
+            if (isFirstExchange && convId && root.currentProvider) {
+                root.currentProvider.generateTitle(firstUserMessage, fullResponse, function(title) {
+                    root.updateConversationTitle(convId, title);
+                });
+            }
         }
 
         function onResponseError(error) {
@@ -370,6 +418,20 @@ Singleton {
         }
     }
 
+    // Handle remote history signals from provider
+    Connections {
+        target: root.currentProvider?.remoteHistory ? root.currentProvider : null
+
+        function onConversationsLoaded(conversations) {
+            root.conversations = conversations;
+        }
+
+        function onConversationLoaded(messages) {
+            root.history = messages;
+            root.historyUpdated();
+        }
+    }
+
     function setModel(model: string): void {
         currentModel = model;
 
@@ -382,24 +444,25 @@ Singleton {
     function setProviderAndModel(providerId: string, model: string): void {
         if (currentProviderId !== providerId) {
             currentProviderId = providerId;
+
+            // Reset conversation state on provider switch
+            currentConversationId = null;
+            history = [];
+            currentResponse = "";
+
+            if (currentProvider?.remoteHistory) {
+                currentProvider.resetThread();
+            }
+
+            historyUpdated();
             providerChanged(currentProvider);
+            loadConversations();
         }
 
         setModel(model);
     }
 
     function sendMessage(message, images = null) {
-        console.log("ChatConnector: sendMessage using provider:", currentProviderId, "currentProvider:", currentProvider?.name, "currentProvider.providerId:", currentProvider?.providerId);
-        
-        // Debug: manually set apiKey from state
-        const state = chatAdapter.providerState[currentProviderId];
-        if (state?.apiKey) {
-            console.log("ChatConnector: manually setting apiKey from state, length:", state.apiKey.length);
-            currentProvider.apiKey = state.apiKey;
-        }
-        
-        console.log("ChatConnector: currentProvider.apiKey:", currentProvider?.apiKey ? "set" : "empty", "enabled:", currentProvider?.enabled, "available:", currentProvider?.available);
-        
         if (!currentProvider) {
             errorMessage = "No provider selected";
             responseError(errorMessage);
@@ -422,9 +485,16 @@ Singleton {
 
         addToHistory("user", message, images);
 
+        // Remote history providers manage context server-side; pass empty history
+        if (currentProvider.remoteHistory) {
+            currentProvider.sendMessage(message, [], images);
+            return;
+        }
+
         let providerHistory = [];
 
-        for (let msg of history) {
+        const contextHistory = history.slice(Math.max(0, history.length - ShellSettings.settings.chatContextMessages));
+        for (let msg of contextHistory) {
             if (msg !== history[history.length - 1]) {
                 let historyEntry = {
                     role: msg.role,
@@ -460,11 +530,34 @@ Singleton {
         }
     }
 
-    function addToHistory(role: string, content: string, images = null): void {
+    function addToHistory(role: string, content: string, images = null, references = null): void {
         let timestamp = new Date();
 
+        // Remote history providers don't use local SQLite
+        if (currentProvider?.remoteHistory) {
+            let newHistory = history.slice();
+            let historyEntry = {
+                role: role,
+                content: content,
+                timestamp: timestamp
+            };
+
+            if (images && Array.isArray(images) && images.length > 0) {
+                historyEntry.images = images;
+            }
+
+            if (references && Array.isArray(references) && references.length > 0) {
+                historyEntry.references = references;
+            }
+
+            newHistory.push(historyEntry);
+            history = newHistory;
+            historyUpdated();
+            return;
+        }
+
         // Create a new conversation if needed
-        if (currentConversationId < 0) {
+        if (!currentConversationId) {
             let title = role === "user" ? _autoGenerateTitle(content) : "New conversation";
             createConversation(title);
         }
@@ -493,18 +586,22 @@ Singleton {
     }
 
     function newConversation(): void {
-        currentConversationId = -1;
+        currentConversationId = null;
         history = [];
         currentResponse = "";
+
+        if (currentProvider?.remoteHistory) {
+            currentProvider.resetThread();
+        }
 
         historyUpdated();
     }
 
     function clearHistory(): void {
-        if (currentConversationId >= 0)
+        if (currentConversationId)
             deleteConversation(currentConversationId);
 
-        currentConversationId = -1;
+        currentConversationId = null;
         history = [];
         currentResponse = "";
 

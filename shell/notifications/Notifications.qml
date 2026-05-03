@@ -4,12 +4,30 @@ pragma Singleton
 import QtQuick
 import QtQml.Models
 import Quickshell
+import Quickshell.Io
 
 Singleton {
     id: root
 
     property bool blockToasts: false
     property alias doNotDisturb: persist.doNotDisturb
+    property bool centerOpen: false
+
+    IpcHandler {
+        target: "notifications"
+
+        function open(): void {
+            root.centerOpen = true;
+        }
+
+        function close(): void {
+            root.centerOpen = false;
+        }
+
+        function toggle(): void {
+            root.centerOpen = !root.centerOpen;
+        }
+    }
 
     PersistentProperties {
         id: persist
@@ -44,7 +62,23 @@ Singleton {
 
     property list<NotificationBacker> notifications: []
 
+    function createNotification(component, properties) {
+        const notification = component.createObject(root, properties ?? {});
+
+        if (!notification) {
+            console.error("Notifications: failed to create notification");
+            return null;
+        }
+
+        notification.ownedByNotificationCenter = true;
+        root.addNotification(notification);
+        return notification;
+    }
+
     function addNotification(notification: NotificationBacker) {
+        if (!notification)
+            return;
+
         notification.notificationId = ++notificationId;
         notifications.push(notification);
 
@@ -56,6 +90,11 @@ Singleton {
 
     function removeNotification(notification: NotificationBacker) {
         root.notifications = root.notifications.filter(n => n !== notification);
+
+        if (notification?.ownedByNotificationCenter) {
+            notification.ownedByNotificationCenter = false;
+            Qt.callLater(() => notification.destroy());
+        }
     }
 
     // Handles the create of application notifications

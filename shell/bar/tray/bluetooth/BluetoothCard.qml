@@ -19,22 +19,33 @@ Item {
         spacing: 2
         anchors.fill: parent
 
-        IconImage {
-            source: {
-                if (root.isAdapterMode) {
-                    if (root.adapter && root.adapter.enabled) {
-                        return Quickshell.iconPath("bluetooth-online");
-                    } else {
-                        return Quickshell.iconPath("bluetooth-offline");
-                    }
-                } else {
-                    return root.device && root.device.icon ? Quickshell.iconPath(root.device.icon) : "";
-                }
-            }
+        Item {
+            width: 24
+            height: 24
+            clip: true
 
-            Layout.preferredWidth: this.height
-            Layout.fillHeight: true
+            Layout.alignment: Qt.AlignVCenter
             Layout.margins: root.isAdapterMode ? 4 : 6
+
+            IconImage {
+                source: {
+                    if (root.isAdapterMode) {
+                        if (root.adapter && root.adapter.enabled) {
+                            return Quickshell.iconPath("bluetooth-online");
+                        } else {
+                            return Quickshell.iconPath("bluetooth-offline");
+                        }
+                    } else {
+                        return root.device && root.device.icon ? Quickshell.iconPath(root.device.icon) : "";
+                    }
+                }
+                implicitWidth: 24
+                implicitHeight: 24
+                width: 24
+                height: 24
+                anchors.centerIn: parent
+                mipmap: true
+            }
         }
 
         ColumnLayout {

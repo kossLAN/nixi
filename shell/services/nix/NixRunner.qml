@@ -15,9 +15,9 @@ Singleton {
     id: root
 
     function runNixPackage(packageName: string): void {
-        Notifications.addNotification(notification.createObject(null, {
+        Notifications.createNotification(notification, {
             packageName: packageName
-        }));
+        });
     }
 
     property Component notification: NotificationBacker {
@@ -31,6 +31,7 @@ Singleton {
         showOnFullscreen: true
 
         summary: `Running ${packageName}`
+        iconSource: Quickshell.iconPath("nix-snowflake")
 
         onDiscarded: nixRunProcess.running = false
 

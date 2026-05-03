@@ -9,7 +9,6 @@ import Quickshell.Widgets
 
 import qs
 import qs.widgets
-import qs.filepicker
 
 SettingsBacker {
     icon: "settings"
@@ -20,7 +19,7 @@ SettingsBacker {
     content: Item {
         id: menu
 
-        property real cardHeight: 36
+        property real cardHeight: 44
 
         property string hostname: ""
 
@@ -33,45 +32,21 @@ SettingsBacker {
             }
         }
 
-        Process {
-            id: copyProfilePicture
-            property string dest: ""
-            onExited: (exitCode, exitStatus) => {
-                if (exitCode === 0)
-                    ShellSettings.profilePicture = "file://" + dest;
-            }
-        }
-
-        FilePicker {
-            id: profilePicturePicker
-            nameFilters: ["Images (*.png *.jpg *.jpeg *.webp)"]
-
-            onAccepted: {
-                const source = selectedFile.toString().replace("file://", "");
-                const ext = source.substring(source.lastIndexOf("."));
-                const dest = "/etc/nixi/profile-picture" + ext;
-                copyProfilePicture.dest = dest;
-                copyProfilePicture.command = ["cp", source, dest];
-                copyProfilePicture.running = true;
-            }
-        }
-
         ColumnLayout {
-            spacing: 0
+            spacing: 8
             anchors.fill: parent
 
-            Item {
+            SettingsSection {
                 Layout.fillWidth: true
-                Layout.preferredHeight: header.implicitHeight + 16
+                Layout.leftMargin: 8
+                Layout.rightMargin: 8
+                Layout.topMargin: 8
 
                 RowLayout {
-                    id: header
                     spacing: 16
 
-                    anchors { 
-                        fill: parent
-                        margins: 8
-                    }
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 48
 
                     Item {
                         Layout.preferredWidth: 48
@@ -92,33 +67,8 @@ SettingsBacker {
                             }
 
                             Image {
-                                source: ShellSettings.profilePicture
+                                source: "root:resources/general/pfp.jpg"
                                 anchors.fill: parent
-                            }
-                        }
-
-                        StyledButton {
-                            color: ShellSettings.colors.active.base
-                            radius: 4 
-                            implicitWidth: 20
-                            implicitHeight: 20
-
-                            anchors {
-                                bottom: parent.bottom
-                                right: parent.right
-                                bottomMargin: -4
-                                rightMargin: -4
-                            }
-
-                            onClicked: profilePicturePicker.open()
-
-                            IconImage {
-                                source: Quickshell.iconPath("edit-image")
-
-                                anchors {
-                                    fill: parent
-                                    margins: 0
-                                }
                             }
                         }
                     }
@@ -147,104 +97,138 @@ SettingsBacker {
                 }
             }
 
-            Separator {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-            }
-
             ColumnLayout {
                 spacing: 8
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.leftMargin: 8
+                Layout.rightMargin: 8
+                Layout.bottomMargin: 8
 
-                SettingsCard {
-                    title: "Bluetooth"
-                    summary: "Show bluetooth controls on the bar & in settings"
+                SettingsSection {
+                    title: "Shell"
 
-                    controls: ToggleSwitch {
-                        checked: ShellSettings.settings.bluetoothEnabled
+                    SettingsCard {
+                        title: "Bar"
+                        summary: "Show the status bar"
 
-                        onCheckedChanged: {
-                            if (ShellSettings.settings.bluetoothEnabled !== checked) {
-                                ShellSettings.settings.bluetoothEnabled = checked;
+                        controls: ToggleSwitch {
+                            checked: ShellSettings.settings.barEnabled
+
+                            onCheckedChanged: {
+                                if (ShellSettings.settings.barEnabled !== checked) {
+                                    ShellSettings.settings.barEnabled = checked;
+                                }
                             }
                         }
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: menu.cardHeight
+                    }
+
+                    SettingsCard {
+                        title: "Launcher"
+                        summary: "Disable the launcher/search button on the bar"
+
+                        controls: ToggleSwitch {
+                            checked: ShellSettings.settings.searchEnabled
+
+                            onCheckedChanged: {
+                                if (ShellSettings.settings.searchEnabled !== checked) {
+                                    ShellSettings.settings.searchEnabled = checked;
+                                }
+                            }
+                        }
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: menu.cardHeight
                     }
 
                     Layout.fillWidth: true
-                    Layout.preferredHeight: menu.cardHeight
                 }
 
-                SettingsCard {
-                    title: "Launcher"
-                    summary: "Disable the launcher/search button on the bar"
+                SettingsSection {
+                    title: "Features"
 
-                    controls: ToggleSwitch {
-                        checked: ShellSettings.settings.searchEnabled
+                    SettingsCard {
+                        title: "Bluetooth"
+                        summary: "Show bluetooth controls on the bar & in settings"
 
-                        onCheckedChanged: {
-                            if (ShellSettings.settings.searchEnabled !== checked) {
-                                ShellSettings.settings.searchEnabled = checked;
+                        controls: ToggleSwitch {
+                            checked: ShellSettings.settings.bluetoothEnabled
+
+                            onCheckedChanged: {
+                                if (ShellSettings.settings.bluetoothEnabled !== checked) {
+                                    ShellSettings.settings.bluetoothEnabled = checked;
+                                }
                             }
                         }
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: menu.cardHeight
+                    }
+
+                    SettingsCard {
+                        title: "Screen Recording"
+                        summary: "Show GPU Screen Recorder controls on the bar & in settings"
+
+                        controls: ToggleSwitch {
+                            checked: ShellSettings.settings.gsrEnabled
+
+                            onCheckedChanged: {
+                                if (ShellSettings.settings.gsrEnabled !== checked) {
+                                    ShellSettings.settings.gsrEnabled = checked;
+                                }
+                            }
+                        }
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: menu.cardHeight
+                    }
+
+                    SettingsCard {
+                        title: "LLM Chat"
+                        summary: "Show the LLM Chat in the launcher & settings"
+
+                        controls: ToggleSwitch {
+                            checked: ShellSettings.settings.chatEnabled
+
+                            onCheckedChanged: {
+                                if (ShellSettings.settings.chatEnabled !== checked) {
+                                    ShellSettings.settings.chatEnabled = checked;
+                                }
+                            }
+                        }
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: menu.cardHeight
                     }
 
                     Layout.fillWidth: true
-                    Layout.preferredHeight: menu.cardHeight
                 }
 
-                SettingsCard {
-                    title: "Debug"
-                    summary: "Disable the debug widgets in the shell"
+                SettingsSection {
+                    title: "Developer"
 
-                    controls: ToggleSwitch {
-                        checked: ShellSettings.settings.debugEnabled
+                    SettingsCard {
+                        title: "Debug"
+                        summary: "Disable the debug widgets in the shell"
 
-                        onCheckedChanged: {
-                            if (ShellSettings.settings.debugEnabled !== checked) {
-                                ShellSettings.settings.debugEnabled = checked;
+                        controls: ToggleSwitch {
+                            checked: ShellSettings.settings.debugEnabled
+
+                            onCheckedChanged: {
+                                if (ShellSettings.settings.debugEnabled !== checked) {
+                                    ShellSettings.settings.debugEnabled = checked;
+                                }
                             }
                         }
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: menu.cardHeight
                     }
 
                     Layout.fillWidth: true
-                    Layout.preferredHeight: menu.cardHeight
-                }
-
-                SettingsCard {
-                    title: "Screen Recording"
-                    summary: "Show GPU Screen Recorder controls on the bar & in settings"
-
-                    controls: ToggleSwitch {
-                        checked: ShellSettings.settings.gsrEnabled
-
-                        onCheckedChanged: {
-                            if (ShellSettings.settings.gsrEnabled !== checked) {
-                                ShellSettings.settings.gsrEnabled = checked;
-                            }
-                        }
-                    }
-
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: menu.cardHeight
-                }
-
-                SettingsCard {
-                    title: "LLM Chat"
-                    summary: "Show the LLM Chat in the launcher & settings"
-
-                    controls: ToggleSwitch {
-                        checked: ShellSettings.settings.chatEnabled
-
-                        onCheckedChanged: {
-                            if (ShellSettings.settings.chatEnabled !== checked) {
-                                ShellSettings.settings.chatEnabled = checked;
-                            }
-                        }
-                    }
-
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: menu.cardHeight
                 }
 
                 Item {

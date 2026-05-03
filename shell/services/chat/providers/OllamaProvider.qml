@@ -275,6 +275,41 @@ ChatProvider {
         }
     }
 
+    function generateTitle(userMessage, assistantResponse, callback): void {
+        let prompt = `Summarize the following conversation in 5 words or fewer. Reply with only the title, no quotes, no punctuation.\n\nUser: ${userMessage}\nAssistant: ${assistantResponse}`;
+
+        let payload = {
+            model: root.currentModel,
+            messages: [
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            stream: false
+        };
+
+        let xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    try {
+                        let response = JSON.parse(xhr.responseText);
+                        let title = (response.message?.content ?? "").trim();
+                        if (title !== "")
+                            callback(title);
+                    } catch (e) {
+                        console.warn("Ollama: Failed to parse title response:", e);
+                    }
+                }
+            }
+        };
+
+        xhr.open("POST", `${root.apiEndpoint}/api/chat`);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(JSON.stringify(payload));
+    }
+
     function checkAvailability(): void {
         fetchModels();
     }

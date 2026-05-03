@@ -9,6 +9,7 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Io
 
+import NixiUtils
 import qs
 import qs.widgets
 import qs.services.mpris
@@ -17,6 +18,7 @@ Item {
     id: root
     required property LockState state
     required property string wallpaper
+    property bool showSessionSelector: false
 
     property string hostname: ""
 
@@ -119,6 +121,34 @@ Item {
         }
     }
 
+    // Session selector (top right)
+    StyledDropdown {
+        id: sessionSelector
+        visible: root.showSessionSelector && model.length > 1
+        anchors {
+            top: parent.top
+            right: parent.right
+            topMargin: 20
+            rightMargin: 20
+        }
+        width: 160
+        height: 32
+        currentValue: root.state.session
+        model: {
+            const sessions = [
+                { value: "jay run", label: "Jay", binary: "jay" },
+                { value: "niri-session", label: "Niri", binary: "niri-session" },
+                { value: "start-hyprland", label: "Hyprland", binary: "start-hyprland" }
+            ];
+            return sessions.filter(s => NixiUtils.inPath(s.binary));
+        }
+        onSelected: value => root.state.session = value
+        onModelChanged: {
+            if (model.length === 1)
+                root.state.session = model[0].value;
+        }
+    }
+
     // Floating login card
     Item {
         id: cardContainer
@@ -169,7 +199,7 @@ Item {
                         }
 
                         Image {
-                            source: ShellSettings.profilePicture
+                            source: "root:resources/general/pfp.jpg"
                             anchors.fill: parent
                         }
                     }
@@ -199,7 +229,7 @@ Item {
                     Rectangle {
                         id: fieldBackground
                         anchors.fill: parent
-                        radius: 12
+                        radius: 8
                         color: ShellSettings.colors.active.alternateBase
                         border.width: 1
                         border.color: ShellSettings.colors.active.light
@@ -348,6 +378,11 @@ Item {
                             target: shakeTransform; property: "x"
                             to: -3; duration: 60
                             easing.type: Easing.InOutQuad
+                        }
+                        NumberAnimation {
+                            target: shakeTransform; property: "x"
+                            to: 0; duration: 50
+                            easing.type: Easing.OutQuad
                         }
 
                         onFinished: {

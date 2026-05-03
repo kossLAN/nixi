@@ -71,16 +71,25 @@ Scope {
                         rightMargin: 15
                     }
 
-                    IconImage {
-                        implicitSize: 30
-                        source: if (Pipewire.defaultAudioSink?.audio.muted) {
-                            return "image://icon/audio-volume-muted";
-                        } else if (Pipewire.defaultAudioSink?.audio.volume > 0.66) {
-                            return "image://icon/audio-volume-high";
-                        } else if (Pipewire.defaultAudioSink?.audio.volume > 0.33) {
-                            return "image://icon/audio-volume-medium";
-                        } else {
-                            return "image://icon/audio-volume-low";
+                    Item {
+                        implicitWidth: 30
+                        implicitHeight: 30
+
+                        IconImage {
+                            source: if (Pipewire.defaultAudioSink?.audio.muted) {
+                                return "image://icon/audio-volume-muted";
+                            } else if (Pipewire.defaultAudioSink?.audio.volume > 0.66) {
+                                return "image://icon/audio-volume-high";
+                            } else if (Pipewire.defaultAudioSink?.audio.volume > 0.33) {
+                                return "image://icon/audio-volume-medium";
+                            } else {
+                                return "image://icon/audio-volume-low";
+                            }
+
+                            anchors {
+                                fill: parent
+                                margins: 1
+                            }
                         }
                     }
 

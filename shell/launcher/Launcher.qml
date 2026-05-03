@@ -14,10 +14,13 @@ import qs.launcher.chat
 
 Singleton {
     property alias launcherOpen: persist.launcherOpen
+    property alias chatFloatingOpen: persist.chatFloatingOpen
 
     PersistentProperties {
         id: persist
+
         property bool launcherOpen: false
+        property bool chatFloatingOpen: false
     }
 
     IpcHandler {
@@ -46,7 +49,7 @@ Singleton {
             exclusiveZone: 0
 
             WlrLayershell.namespace: "shell:launcher"
-            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
             anchors {
@@ -138,8 +141,8 @@ Singleton {
                         ApplicationLauncher {
                             onAccepted: persist.launcherOpen = false
                         },
-                        Settings {},
-                        Chat {}
+                        Chat {},
+                        Settings {}
                     ]
 
                     onCurrentIndexChanged: {
@@ -176,6 +179,46 @@ Singleton {
                 }
             }
         }
+    }
+
+    LazyLoader {
+        active: persist.chatFloatingOpen
+
+        FloatingWindow {
+            id: chatWindow
+
+            visible: true
+            color: "transparent"
+            title: "Nixi Chat"
+            minimumSize: Qt.size(400, 300)
+            implicitWidth: ShellSettings.sizing.chatSize.width
+            implicitHeight: ShellSettings.sizing.chatSize.height
+
+            onVisibleChanged: {
+                if (!visible)
+                    persist.chatFloatingOpen = false;
+            }
+
+            StyledRectangle {
+                color: ShellSettings.colors.active.window
+                clip: true
+                anchors.fill: parent
+
+                ChatManager {
+                    floating: true
+                    anchors.fill: parent
+                }
+            }
+        }
+    }
+
+    function openFloatingChat(): void {
+        persist.chatFloatingOpen = true;
+        persist.launcherOpen = false;
+    }
+
+    function closeFloatingChat(): void {
+        persist.chatFloatingOpen = false;
     }
 
     function init() {

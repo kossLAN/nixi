@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import Qt.labs.folderlistmodel
 import Quickshell
-import Quickshell.Io
 import Quickshell.Widgets
 
 import qs
@@ -20,17 +19,6 @@ SettingsBacker {
 
     content: Item {
         id: menu
-
-        property int wallpaperMode: 0
-
-        Process {
-            id: copyGreeterWallpaper
-            property string dest: ""
-            onExited: (exitCode, exitStatus) => {
-                if (exitCode === 0)
-                    ShellSettings.greeterWallpaper = "file://" + dest;
-            }
-        }
 
         FilePicker {
             id: folderPicker
@@ -67,7 +55,7 @@ SettingsBacker {
                     anchors.fill: parent
 
                     Image {
-                        source: menu.wallpaperMode === 0 ? ShellSettings.settings.wallpaperUrl : ShellSettings.greeterWallpaper
+                        source: ShellSettings.settings.wallpaperUrl
                         anchors.fill: parent
                     }
                 }
@@ -77,20 +65,6 @@ SettingsBacker {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
                 Layout.topMargin: 40
-
-                TopBar {
-                    id: modeBar
-                    model: ["preferences-desktop-display-randr", "lock"]
-                    currentIndex: menu.wallpaperMode
-                    onCurrentIndexChanged: menu.wallpaperMode = currentIndex
-                    color: ShellSettings.colors.active.base
-                    implicitHeight: 32
-
-                    anchors {
-                        left: parent.left
-                        verticalCenter: parent.verticalCenter
-                    }
-                }
 
                 StyledButton {
                     color: ShellSettings.colors.active.base
@@ -150,18 +124,7 @@ SettingsBacker {
                         implicitWidth: wallpaperGrid.cellWidth
                         implicitHeight: wallpaperGrid.cellHeight
 
-                        onClicked: {
-                            if (menu.wallpaperMode === 0) {
-                                ShellSettings.settings.wallpaperUrl = wallpaper.filePath;
-                            } else {
-                                const source = wallpaper.filePath.toString().replace("file://", "");
-                                const ext = source.substring(source.lastIndexOf("."));
-                                const dest = "/etc/nixi/greeter-wallpaper" + ext;
-                                copyGreeterWallpaper.dest = dest;
-                                copyGreeterWallpaper.command = ["cp", source, dest];
-                                copyGreeterWallpaper.running = true;
-                            }
-                        }
+                        onClicked: ShellSettings.settings.wallpaperUrl = wallpaper.filePath
 
                         ClippingRectangle {
                             color: ShellSettings.colors.active.base
@@ -175,6 +138,9 @@ SettingsBacker {
                             Image {
                                 source: Qt.resolvedUrl(wallpaper.filePath)
                                 fillMode: Image.PreserveAspectCrop
+                                smooth: true
+                                cache: false
+                                asynchronous: true
                                 anchors.fill: parent
                             }
 

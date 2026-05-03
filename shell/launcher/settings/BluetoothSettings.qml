@@ -267,22 +267,10 @@ SettingsBacker {
                                     elide: Text.ElideRight
                                 }
 
-                                Rectangle {
-
+                                StyledRectangle {
                                     radius: 3
                                     Layout.preferredWidth: statusText.implicitWidth + 6
                                     Layout.preferredHeight: statusText.implicitHeight + 2
-
-                                    color: {
-                                        if (!deviceCard.modelData)
-                                            return ShellSettings.colors.active.dark;
-                                        if (deviceCard.modelData.connected)
-                                            return ShellSettings.colors.extra.open; 
-                                        if (deviceCard.modelData.paired)
-                                            return ShellSettings.colors.active.highlight;
-
-                                        return ShellSettings.colors.active.dark;
-                                    }
 
                                     StyledText {
                                         id: statusText
@@ -298,14 +286,12 @@ SettingsBacker {
                                             return "Available";
                                         }
                                         font.pointSize: 9
-                                        color: "white"
                                         anchors.centerIn: parent
                                     }
                                 }
 
-                                Rectangle {
+                                StyledRectangle {
                                     visible: deviceCard.modelData && deviceCard.modelData.batteryAvailable
-                                    color: ShellSettings.colors.active.dark
                                     radius: 3
                                     Layout.preferredWidth: batteryText.implicitWidth + 6
                                     Layout.preferredHeight: batteryText.implicitHeight + 2

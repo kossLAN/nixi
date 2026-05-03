@@ -10,12 +10,10 @@ Item {
     property string summary: ""
 
     property Component controls: Item {}
+    property real controlWidth: 140
 
     RowLayout {
-        anchors {
-            fill: parent
-            margins: 8
-        }
+        anchors.fill: parent
 
         ColumnLayout {
             spacing: 2
@@ -24,7 +22,7 @@ Item {
             Layout.fillHeight: true
 
             StyledText {
-                text: root.title 
+                text: root.title
                 font.pointSize: 9
             }
 
@@ -35,16 +33,22 @@ Item {
             }
         }
 
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-        }
+        RowLayout {
+            spacing: 0
+            Layout.preferredWidth: Math.max(root.controlWidth, controlsLoader.item?.width ?? controlsLoader.implicitWidth)
+            Layout.alignment: Qt.AlignVCenter
 
-        Loader {
-            active: root.controls
-            sourceComponent: root.controls
+            Item {
+                Layout.fillWidth: true
+            }
 
-            Layout.fillHeight: true
+            Loader {
+                id: controlsLoader
+                active: root.controls
+                sourceComponent: root.controls
+
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
     }
 }

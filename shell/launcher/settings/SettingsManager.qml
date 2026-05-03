@@ -88,10 +88,10 @@ Item {
                 Layout.margins: 12
             }
 
-            Separator {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-            }
+            // Separator {
+            //     Layout.fillWidth: true
+            //     Layout.preferredHeight: 1
+            // }
 
             Loader {
                 id: wrapper

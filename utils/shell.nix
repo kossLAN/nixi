@@ -1,6 +1,6 @@
 {
-  pkgs ? import <nixpkgs> {},
-  microtex ? pkgs.callPackage ./microtex.nix {},
+  pkgs ? import <nixpkgs> { },
+  microtex ? pkgs.callPackage ./microtex.nix { },
 }:
 pkgs.mkShell {
   buildInputs = with pkgs; [
@@ -9,18 +9,21 @@ pkgs.mkShell {
     pkg-config
     qt6.qtbase
     qt6.qtdeclarative
+    qt6.qtwayland
+    wayland
     microtex
     tinyxml-2
   ];
 
   nativeBuildInputs = with pkgs; [
     just
+    wayland-scanner
   ];
 
   shellHook = ''
     export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
     # export LD_LIBRARY_PATH=$PWD/debug/lib64
-    # export QT_PLUGIN_PATH=$PWD/debug/lib/qt5/plugins:$PWD/debug/lib/qt6/plugins
+    # export QT_PLUGIN_PATH=$PWD/debug/lib5/plugins:$PWD/debug/lib/qt6/plugins
 
     # Add Qt-related environment variables.
     # https://discourse.nixos.org/t/qt-development-environment-on-a-flake-system/23707/5

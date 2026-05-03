@@ -97,10 +97,7 @@ TrayBacker {
                 Layout.fillWidth: true
                 Layout.preferredHeight: menu.entryHeight
 
-                onClicked: {
-                    GpuScreenRecord.saveReplay();
-                    root.showMenu = false;
-                }
+                onClicked: GpuScreenRecord.saveReplay()
 
                 RowLayout {
                     spacing: 8

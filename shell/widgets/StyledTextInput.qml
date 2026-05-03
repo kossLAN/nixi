@@ -7,6 +7,7 @@ StyledRectangle {
     clip: true
     radius: 6
     color: ShellSettings.colors.active.alternateBase
+    implicitHeight: 28
 
     property alias text: textInput.text
     property alias placeholderText: placeholder.text
@@ -47,13 +48,13 @@ StyledRectangle {
             id: textInput
             color: ShellSettings.colors.active.text
             clip: true
-            focus: true 
+            focus: true
             verticalAlignment: TextInput.AlignVCenter
             echoMode: root.isSensitive ? TextInput.Password : TextInput.Normal
             inputMethodHints: root.isSensitive ? Qt.ImhSensitiveData : Qt.ImhNone
             scale: root.isSensitive && activeFocus ? 1.02 : 1.0
             anchors.fill: parent
-            
+
             onAccepted: root.accepted()
 
             Behavior on scale {

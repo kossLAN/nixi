@@ -8,6 +8,8 @@ import qs.widgets
 Item {
     id: root
 
+    property bool floating: false
+
     RowLayout {
         // spacing: 8
         spacing: 0
@@ -15,15 +17,10 @@ Item {
 
         ChatSidebar {
             Layout.fillHeight: true
-            Layout.margins: 8
-        }
-
-        Separator {
-            Layout.preferredWidth: 1
-            Layout.fillHeight: true
         }
 
         ChatWindow {
+            floating: root.floating
             Layout.fillWidth: true
             Layout.fillHeight: true
         }

@@ -70,19 +70,19 @@ Singleton {
             splitMarker: ""
 
             onRead: data => {
-                if (!ShellSettings.settings.debugEnabled)
-                    return;
-
                 root.lastError += data;
-                console.warn("GSR stderr:", data.trim());
+
+                if (ShellSettings.settings.debugEnabled) {
+                    console.warn("GSR stderr:", data.trim());
+                }
             }
         }
 
         onExited: (exitCode, exitStatus) => {
-            console.log("GpuScreenRecord: Process exited with code", exitCode);
-
-            if (exitCode !== 0 && root.lastError !== "") {
-                console.error("GpuScreenRecord: Error output:", root.lastError);
+            if (exitCode !== 0) {
+                console.error("GpuScreenRecord: Exited with code", exitCode, ":", root.lastError);
+            } else {
+                console.log("GpuScreenRecord: Process exited normally");
             }
         } 
     }
@@ -137,6 +137,7 @@ Singleton {
         id: toast
         summary: "Clip saved"
         showOnFullscreen: true
+        iconSource: Quickshell.iconPath("media-record")
 
         body: Text {
             color: ShellSettings.colors.active.text.darker(1.25)
@@ -321,7 +322,7 @@ Singleton {
         }
 
         gsrProcess.signal(10);
-        Notifications.addNotification(notification.createObject(null))
+        Notifications.createNotification(notification)
 
         console.log("GpuScreenRecord: Replay save triggered");
     }

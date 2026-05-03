@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import QtQuick.Effects
 
 import qs.widgets
@@ -115,6 +116,10 @@ Scope {
             implicitWidth: root.bar.width
             implicitHeight: Math.max(popup.screen.height, parentItem.targetHeight)
 
+            mask: Region {
+                item: parentItem
+            }
+
             anchor {
                 window: root.bar
                 rect: Qt.rect(0, 0, root.bar.width, root.bar.height)
@@ -123,20 +128,18 @@ Scope {
                 adjustment: PopupAdjustment.None
             }
 
-            MouseArea {
-                anchors.fill: parent
+            HyprlandFocusGrab {
+                id: grab
+                active: popup.visible
+                windows: [popup, root.bar]
 
-                onClicked: function (mouse) {
-                    let localPos = mapToItem(parentItem, mouse.x, mouse.y);
-
-                    if (!parentItem.contains(Qt.point(localPos.x, localPos.y))) {
-                        root.shownItem.closed();
-                    }
+                onCleared: {
+                    root.shownItem.closed();
                 }
             }
 
             RectangularShadow {
-                anchors.fill: parentItem 
+                anchors.fill: parentItem
                 radius: backgroundLoader.item.radius ?? 8
                 blur: 16
                 spread: 2

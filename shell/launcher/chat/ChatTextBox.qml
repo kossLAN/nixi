@@ -58,8 +58,8 @@ StyledRectangle {
             let newImages = root.pendingImages.slice();
 
             newImages.push({
-                base64: NixiUtils.fileToBase64(selectedFile),
-                mediaType: NixiUtils.getMimeType(selectedFile)
+                base64: ClipboardUtils.fileToBase64(selectedFile),
+                mediaType: ClipboardUtils.getMimeType(selectedFile)
             });
 
             root.pendingImages = newImages;
@@ -160,7 +160,7 @@ StyledRectangle {
 
                     Keys.onPressed: event => {
                         if (event.modifiers === Qt.ControlModifier && event.key === Qt.Key_V) {
-                            let base64 = NixiUtils.clipboardImage();
+                            let base64 = ClipboardUtils.clipboardImage();
                             if (base64 === "") return;
 
                             let newImages = root.pendingImages.slice();

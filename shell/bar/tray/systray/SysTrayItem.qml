@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.SystemTray
 
@@ -34,16 +35,9 @@ TrayBacker {
         IconImage {
             source: root.icon
 
-            property bool iconFromTheme: {
-                if (root.item?.icon.startsWith("image://icon/"))
-                    return true;
-
-                return false;
-            }
-
             anchors {
                 fill: parent
-                margins: iconFromTheme ? 0 : 4
+                margins: 2
             }
         }
     }

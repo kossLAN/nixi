@@ -18,26 +18,25 @@ SettingsBacker {
         id: menu
 
         ColumnLayout {
-            spacing: 0
-            anchors.fill: parent
+            spacing: 8
+            anchors {
+                fill: parent
+                margins: 8
+            }
 
-            SettingsCard {
-                title: "Conversation History"
-                summary: `${ChatConnector.conversations.length} saved conversations`
+            SettingsSection {
+                title: "History"
 
-                Layout.fillWidth: true
-                Layout.preferredHeight: 48
+                SettingsCard {
+                    title: "Conversation History"
+                    summary: `${ChatConnector.conversations.length} saved conversations`
 
-                controls: Item {
-                    implicitWidth: 100
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 48
 
-                    StyledMouseArea {
-                        radius: 4
-
-                        anchors {
-                            fill: parent
-                            margins: 6
-                        }
+                    controls: StyledButton {
+                        implicitWidth: 110
+                        implicitHeight: 28
 
                         onClicked: {
                             let convs = ChatConnector.conversations.slice();
@@ -55,38 +54,32 @@ SettingsBacker {
                         }
                     }
                 }
-            }
 
-            Separator {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 1
             }
 
             Repeater {
                 model: ChatConnector.providers
 
-                ColumnLayout {
+                SettingsSection {
                     id: providerSection
 
                     required property var modelData
                     required property int index
 
-                    spacing: 4
-                    Layout.fillWidth: true
-
                     Item {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 24 
-                        Layout.margins: 8
+                        Layout.preferredHeight: 48
 
                         RowLayout {
-                            spacing: 0
+                            spacing: 8
+
                             anchors.fill: parent
 
                             ProviderCard {
                                 provider: providerSection.modelData
                                 Layout.fillWidth: true
-                                Layout.fillHeight: true 
+                                Layout.fillHeight: true
                             }
 
                             ToggleSwitch {
@@ -101,7 +94,6 @@ SettingsBacker {
                         }
                     }
 
-                    // Provider-specific settings
                     Loader {
                         active: providerSection.modelData.settings !== null
                         sourceComponent: providerSection.modelData.settings
@@ -109,11 +101,7 @@ SettingsBacker {
                         Layout.fillWidth: true
                     }
 
-                    Separator {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 1
-                        Layout.topMargin: 4
-                    }
+                    Layout.fillWidth: true
                 }
             }
 

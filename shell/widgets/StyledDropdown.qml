@@ -34,7 +34,7 @@ Item {
     }
 
     implicitWidth: 140
-    implicitHeight: 32
+    implicitHeight: 28
 
     StyledRectangle {
         id: button
@@ -106,7 +106,7 @@ Item {
         StyledRectangle {
             id: dropdown
             radius: 6
-            color: root.color 
+            color: root.color
             x: dropdownOverlay.dropdownX
             y: dropdownOverlay.dropdownY
             width: root.width

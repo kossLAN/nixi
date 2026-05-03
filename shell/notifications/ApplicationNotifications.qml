@@ -8,6 +8,7 @@ Scope {
     NotificationServer {
         id: server
         actionsSupported: true
+        imageSupported: true
         persistenceSupported: true
     }
 

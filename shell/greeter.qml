@@ -6,7 +6,6 @@ import Quickshell.Wayland
 import Quickshell.Services.Greetd
 import qs
 import qs.lockscreen
-import qs.services.niri
 
 ShellRoot {
     id: root
@@ -16,8 +15,7 @@ ShellRoot {
 
         onLaunch: {
             lock.locked = false;
-            const session = Quickshell.env("GREETER_SESSION") || "niri-session";
-            Greetd.launch([session]);
+            Greetd.launch(context.state.session.split(","));
         }
     }
 
@@ -28,14 +26,10 @@ ShellRoot {
         WlSessionLockSurface {
             LockSurface {
                 state: context.state
-                wallpaper: ShellSettings.greeterWallpaper
+                wallpaper: "root:resources/general/greeter.jpg"
+                showSessionSelector: true
                 anchors.fill: parent
             }
         }
-    }
-
-    // Try to load Niri monitor config as configured
-    Component.onCompleted: {
-        Niri.reloadMonitorConfig();
     }
 }
